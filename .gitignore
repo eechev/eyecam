@@ -1,0 +1,12 @@
+# exclude any project files
+.project
+.pydevproject
+
+# exclude any system setting and environment folders or files
+.env
+venv
+
+#exclude database and compiled files
+*.pyc
+*.sqlite
+
