@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% import "bootstrap/wtf.html" as wtf %}
+
+{% block title %}EYECAM - {{ camNum }}{% endblock %}
+
+{% block page_content %}
+<div class="page-header">
+    <h1>{{ camNum }}</h1>
+</div>
+<div>
+	<img src="{{ url_for('camera.video_feed') }}" />
+</div>
+<div class="col-md-4">
+    {{ wtf.quick_form(form) }}
+</div>
+{% endblock %}
