@@ -9,6 +9,9 @@ from .forms import NameForm
 @main.route('/', methods=['GET', 'POST'])
 def index():
     cameras = Cameras.query.all()
-    return render_template('index.html', cameras=cameras)
+    if cameras is None:
+        internal_server_error(e)
+    else:
+        return render_template('index.html', cameras=cameras)
 
 
