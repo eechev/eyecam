@@ -33,8 +33,6 @@ def create_app(config_name):
     
     from .camera import camera as camera_blueprint
     app.register_blueprint(camera_blueprint, url_prefix='/camera')
-    
-    
 
     return app
 

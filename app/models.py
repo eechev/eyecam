@@ -36,9 +36,6 @@ class User(UserMixin, db.Model):
             db.session.add(admin)
             db.session.commit()
 
-@login_manager.user_loader
-def load_user(user_id):
-    return User.query.get(int(user_id))
 
 class Cameras(db.Model):
     __tablename__ = 'cameras'
@@ -49,6 +46,7 @@ class Cameras(db.Model):
     hflip = db.Column(db.Boolean, unique=False, default=False)
     
     def updateCameraSettings(self):
+        print("updating camera setting for " + self.cameraName)
         myCamera = Cameras.query.filter_by(cameraName=self.cameraName).first()
         if myCamera is not None:
             myCamera.resolution = self.resolution
@@ -65,4 +63,8 @@ class Cameras(db.Model):
             
         db.session.commit()
         
-        
+@login_manager.user_loader
+def load_user(user_id):
+    return User.query.get(int(user_id))
+
+    

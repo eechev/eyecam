@@ -1,11 +1,11 @@
 {% extends "base.html" %}
 {% import "bootstrap/wtf.html" as wtf %}
 
-{% block title %}EYECAM - {{ camNum }}{% endblock %}
+{% block title %}EYECAM{% endblock %}
 
 {% block page_content %}
 <div class="page-header">
-    <h1>{{ camNum }}</h1>
+    <h2>{{ camNum }}</h2>
 </div>
 <div>
 	<img src="{{ url_for('camera.video_feed') }}" />
