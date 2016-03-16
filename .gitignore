@@ -1,6 +1,7 @@
 # exclude any project files
 .project
 .pydevproject
+*.prefs
 
 # exclude any system setting and environment folders or files
 .env
