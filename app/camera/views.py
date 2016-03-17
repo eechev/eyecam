@@ -46,13 +46,18 @@ def livefeed(camNum):
     if mycamera is None:
         abort(404)
     else:
-        print mycamera.resolution
         form.resolution.data = mycamera.resolution
         form.vflip.data = mycamera.vflip
         form.hflip.data = mycamera.hflip        
         return render_template('camera/livefeed.html', form=form, camNum=camNum)
 
-@camera.route('/video_feed')
-def video_feed():
-        return Response(gen(Camera()), mimetype='multipart/x-mixed-replace; boundary=frame')
+@camera.route('/video_feed/<camNum>')
+def video_feed(camNum):
+    print "setting up the video feed with " + camNum
+    mycamera = Cameras.query.filter_by(cameraName=camNum).first()
+    if mycamera is None:
+        abort(404)
+    else:
+        return Response(gen(Camera(mycamera.resolution, mycamera.vflip, mycamera.hflip)), 
+                        mimetype='multipart/x-mixed-replace; boundary=frame')
     
