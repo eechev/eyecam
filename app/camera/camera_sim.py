@@ -5,10 +5,11 @@ class Camera(object):
     files 1.jpg, 2.jpg and 3.jpg at a rate of one frame per second."""
     
 
-    def __init__(self, resolution, vflip, hflip):
-        self.resolution = resolution
-        self.vflip = vflip
-        self.hflip = hflip
+    def __init__(self, object):
+        print object.cameraName
+        self.resolution = object.resolution
+        self.vflip = object.vflip
+        self.hflip = object.hflip
         print self.resolution
         print self.vflip
         print self.hflip
