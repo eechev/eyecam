@@ -1,10 +1,13 @@
 import time
 import io
 import threading
+import thread
 import picamera
 import RPi.GPIO as gp
 
 # initialize multi camera adapter module
+# http://www.arducam.com/multi-camera-adapter-module-raspberry-pi/
+print "Initializing GPIO"
 gp.setwarnings(False)
 gp.setmode(gp.BOARD)
    
@@ -20,7 +23,8 @@ gp.setup(23, gp.OUT)
 gp.setup(24, gp.OUT)
 
 # enabling 11 and 12 represents no camera
-# pin 7 becomes a don't care status   
+# pin 7 becomes a don't care status
+gp.output(7, False)   
 gp.output(11, True)
 gp.output(12, True)
 
@@ -34,69 +38,114 @@ gp.output(23, True)
 gp.output(24, True)
 
 class Camera(object):
-    thread = None  # background thread that reads frames from camera
+    thread = None
     frame = None  # current frame is stored here by background thread
     last_access = 0  # time of last client access to the camera
-
+    stopStreaming = False
+    resolution = (320, 240)
+    vflip = True
+    hflip = True
+    name = None
+    mycamera = None
     
-
-    def initialize(self):
-        if Camera.thread is None:
-            Camera.stop_request = False
-            
-            # start background frame thread
-            Camera.thread = threading.Thread(target=self._thread)
-            Camera.thread.start()
-
-            # wait until frames start to be available
-            while self.frame is None:
-                time.sleep(0)
-
-    def get_frame(self):
-        Camera.last_access = time.time()
-        self.initialize()
-        return self.frame
-
-    @classmethod
-    def _thread(cls):
-        with picamera.PiCamera() as camera:
-            # camera 1 setup
+    
+    def setGP(self, object):
+        print "setting gpio"
+        if object.cameraName == "Cam_4":
+            gp.output(7, True)
+            gp.output(11, True)
+            gp.output(12, False)
+        elif object.cameraName == "Cam_3":
+            gp.output(7, False)
+            gp.output(11, True)
+            gp.output(12, False)
+        elif object.cameraName == "Cam_2":
             gp.output(7, True)
             gp.output(11, False)
             gp.output(12, True)
-            camera.resolution = self.resolution
-            camera.hflip = self.hflip
-            camera.vflip = self.vflip
-
-            # let camera warm up
-            camera.start_preview()
-            time.sleep(2)
-
-            stream = io.BytesIO()
-            for foo in camera.capture_continuous(stream, 'jpeg',
-                                                 use_video_port=True):
-                # store frame
-                stream.seek(0)
-                cls.frame = stream.read()
-
-                # reset stream for next frame
-                stream.seek(0)
-                stream.truncate()
-                
-                ## check to see if a request to stop was issued
-                if Camera.stop_request:
-                    break
-
-                # if there hasn't been any clients asking for frames in
-                # the last 10 seconds stop the thread
-                if time.time() - cls.last_access > 10:
-                    break
-
+        else:
             gp.output(7, False)
-            gp.output(11, True)
+            gp.output(11, False)
             gp.output(12, True)
-            cls.thread = None
 
-    def stop_streaming(self):
-        Camera.stop_request = True
+    def setCamera(self, object):
+        print "setting camera settings"
+        self.name = object.cameraName
+        if object.resolution == "high":
+            self.mycamera.resolution = (1024, 768)
+        elif object.resolution == "medium":
+            self.mycamera.resolution = (800, 600)
+        else:
+            self.mycamera.resolution = (320, 240)
+            
+        self.mycamera.vflip = object.vflip
+        self.mycamera.hflip = object.hflip
+            
+    def __init__(self, object):
+        print "Instantiating camera object"
+        stopStreaming = False
+        self.setGP(object)
+        self.mycamera = picamera.PiCamera()
+        self.setCamera(object)
 
+    def get_frame(self):
+        self.last_access = time.time()
+        return self.frame
+    
+    def startStream(self):
+        print "start stream"
+        if self.thread is None:
+            # let camera warm up
+            self.stopStreaming = False
+            self.mycamera.start_preview()
+            time.sleep(2)
+            self.thread = CameraThread(1, self)
+            self.thread.start()
+            print "camera stream thread started"
+    
+    def stopStream(self):
+        print "stopping stream"
+        self.stopStreaming = True
+        
+        
+    def readframes(self):
+        
+        stream = io.BytesIO()
+        
+        for foo in self.mycamera.capture_continuous(stream, 'jpeg',
+                                             use_video_port=True):
+            # store frame
+            stream.seek(0)
+            self.frame = stream.read()
+    
+            # reset stream for next frame
+            stream.seek(0)
+            stream.truncate()
+    
+            # if there hasn't been any clients asking for frames in
+            # the last 10 seconds stop the thread
+
+            if time.time() - self.last_access > 5 or self.stopStreaming:
+                print "killing stream"
+                self.mycamera.close()
+                break
+            
+    def takePicture(self):
+        self.mycamera.startpreview()
+        time.sleep(2)
+        camera.capture('app/static/pics/' + self.name + time.time() + '.jpg')
+            
+
+class CameraThread(threading.Thread):
+    def __init__(self, threadID, object):
+        threading.Thread.__init__(self)
+        self.threadID = threadID
+        self.object = object
+        self.name = self.object.name
+        
+    def run(self):
+        print "Starting " + self.name
+        self.object.readframes()
+        self.object.thread = None
+        print "End of " + self.name
+        
